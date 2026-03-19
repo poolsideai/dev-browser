@@ -36,9 +36,12 @@ console.log(JSON.stringify(tabs, null, 2));
 EOF
 ```
 
-Run `dev-browser --help` for full usage, script API reference, and LLM guide.
+### Using with AI agents
 
-## Plugin Installation
+After installing, just tell your agent to run `dev-browser --help` — the help output includes a full LLM usage guide with examples and API reference. No plugin or skill installation needed.
+
+<details>
+<summary>Legacy plugin installation (Claude Code / Amp / Codex)</summary>
 
 ### Claude Code
 
@@ -62,6 +65,8 @@ git clone https://github.com/sawyerhood/dev-browser /tmp/dev-browser-skill
 cp -r /tmp/dev-browser-skill/skills/dev-browser $SKILLS_DIR/dev-browser
 rm -rf /tmp/dev-browser-skill
 ```
+
+</details>
 
 ## Script API
 
