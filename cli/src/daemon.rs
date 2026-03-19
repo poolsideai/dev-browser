@@ -81,6 +81,23 @@ pub fn is_daemon_running() -> bool {
     process_is_alive(pid) && connect_to_daemon().is_ok()
 }
 
+pub fn current_daemon_pid() -> Option<i32> {
+    daemon_pid()
+}
+
+pub fn wait_for_daemon_exit(pid: i32, timeout: Duration) -> Result<(), Box<dyn Error>> {
+    let deadline = Instant::now() + timeout;
+    while Instant::now() < deadline {
+        if !process_is_alive(pid) {
+            return Ok(());
+        }
+
+        thread::sleep(Duration::from_millis(100));
+    }
+
+    Err(format!("Daemon failed to stop within {} seconds", timeout.as_secs()).into())
+}
+
 fn spawn_daemon(command: &DaemonCommand) -> io::Result<()> {
     let mut process = Command::new(&command.program);
     process.args(&command.args);
