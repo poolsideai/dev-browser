@@ -29,7 +29,7 @@ _scratch/
 # WXT generated files
 bin/dev-browser-*
 build/
-cli/target/
+**/target/
 coverage/
 daemon/dist/*
 daemon/node_modules/
