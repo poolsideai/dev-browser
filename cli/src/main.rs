@@ -4,7 +4,10 @@ mod skill;
 
 use clap::{CommandFactory, Parser, Subcommand};
 use connection::{connect_to_daemon, read_line, send_message};
-use daemon::{ensure_daemon, install_daemon_runtime, is_daemon_running};
+use daemon::{
+    current_daemon_pid, ensure_daemon, install_daemon_runtime, is_daemon_running,
+    wait_for_daemon_exit,
+};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use skill::install_skill;
@@ -13,7 +16,7 @@ use std::fs;
 use std::io::{self, BufReader, Read, Write};
 use std::os::unix::net::UnixStream;
 use std::process;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 const CLI_LONG_ABOUT: &str = r###"Dev Browser is a CLI for controlling local or external browsers with JavaScript scripts.
 Scripts run in a sandboxed QuickJS runtime (not Node.js). Top-level `await` is
@@ -379,6 +382,8 @@ fn run() -> Result<i32, Box<dyn Error>> {
                 return Ok(0);
             }
 
+            let daemon_pid = current_daemon_pid();
+
             let exit_code = send_request(
                 json!({
                     "id": request_id("stop"),
@@ -388,6 +393,9 @@ fn run() -> Result<i32, Box<dyn Error>> {
             )?;
 
             if exit_code == 0 {
+                if let Some(pid) = daemon_pid {
+                    wait_for_daemon_exit(pid, Duration::from_secs(10))?;
+                }
                 println!("Daemon stopped.");
             }
 
