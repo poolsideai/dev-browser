@@ -94,7 +94,9 @@ function createMessageQueue(socket: net.Socket) {
 
   return {
     push(message: Response): Promise<void> {
-      queue = queue.then(() => writeMessage(socket, message));
+      queue = queue
+        .then(() => writeMessage(socket, message))
+        .catch(() => undefined);
       return queue;
     },
     async drain(): Promise<void> {

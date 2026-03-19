@@ -16,7 +16,6 @@ pub fn socket_path() -> io::Result<PathBuf> {
 
 pub fn connect_to_daemon() -> io::Result<UnixStream> {
     let stream = UnixStream::connect(socket_path()?)?;
-    stream.set_read_timeout(Some(Duration::from_secs(60)))?;
     stream.set_write_timeout(Some(Duration::from_secs(5)))?;
     Ok(stream)
 }
