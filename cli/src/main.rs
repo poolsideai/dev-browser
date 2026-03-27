@@ -170,9 +170,20 @@ enum Command {
     Install,
     #[command(
         about = "Install the dev-browser skill into agent skill directories",
-        long_about = "Install the embedded dev-browser skill into selected agent skill directories.\n\nLaunches an interactive multi-select prompt for the supported install targets."
+        long_about = "Install the embedded dev-browser skill into agent skill directories.\n\nBy default, launches an interactive multi-select prompt for the supported install targets when a TTY is available.\n\nIn non-interactive environments, installs to both supported skill directories.\n\nUse `--claude` and/or `--agents` to skip prompting and install to specific targets."
     )]
-    InstallSkill,
+    InstallSkill {
+        #[arg(
+            long,
+            help = "Install the skill into ~/.claude/skills without prompting"
+        )]
+        claude: bool,
+        #[arg(
+            long,
+            help = "Install the skill into ~/.agents/skills without prompting"
+        )]
+        agents: bool,
+    },
     #[command(
         about = "List all managed browser instances",
         long_about = "List all managed browser instances.\n\nShows the browser name, whether it is daemon-launched or externally connected, its status, and any named pages currently registered."
@@ -252,8 +263,8 @@ fn run() -> Result<i32, Box<dyn Error>> {
             install_daemon_runtime()?;
             Ok(0)
         }
-        Some(Command::InstallSkill) => {
-            install_skill()?;
+        Some(Command::InstallSkill { claude, agents }) => {
+            install_skill(*claude, *agents)?;
             Ok(0)
         }
         Some(Command::Status) => {

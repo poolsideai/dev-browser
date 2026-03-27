@@ -36,18 +36,30 @@ enum SyncResult {
     AlreadyInstalled,
 }
 
-pub fn install_skill() -> Result<(), Box<dyn Error>> {
-    if !interactive_terminal_available() {
-        return Err("`dev-browser install-skill` requires an interactive terminal.".into());
-    }
+enum InstallTargetSelection {
+    Prompt,
+    Selected(Vec<usize>),
+}
+
+pub fn install_skill(install_claude: bool, install_agents: bool) -> Result<(), Box<dyn Error>> {
+    let selections = match resolve_install_target_selection(
+        install_claude,
+        install_agents,
+        interactive_terminal_available(),
+    ) {
+        InstallTargetSelection::Prompt => {
+            let Some(selections) = prompt_for_install_targets()? else {
+                println!("Cancelled.");
+                return Ok(());
+            };
+
+            selections
+        }
+        InstallTargetSelection::Selected(selections) => selections,
+    };
 
     let home_dir =
         dirs::home_dir().ok_or("Could not determine the home directory for skill installation.")?;
-
-    let Some(selections) = prompt_for_install_targets()? else {
-        println!("Cancelled.");
-        return Ok(());
-    };
 
     if selections.is_empty() {
         println!("No install targets selected.");
@@ -74,6 +86,30 @@ pub fn install_skill() -> Result<(), Box<dyn Error>> {
     }
 
     Ok(())
+}
+
+fn resolve_install_target_selection(
+    install_claude: bool,
+    install_agents: bool,
+    interactive_terminal: bool,
+) -> InstallTargetSelection {
+    if install_claude || install_agents {
+        let mut selections = Vec::new();
+        if install_claude {
+            selections.push(0);
+        }
+        if install_agents {
+            selections.push(1);
+        }
+
+        return InstallTargetSelection::Selected(selections);
+    }
+
+    if interactive_terminal {
+        InstallTargetSelection::Prompt
+    } else {
+        InstallTargetSelection::Selected((0..INSTALL_TARGETS.len()).collect())
+    }
 }
 
 fn prompt_for_install_targets() -> Result<Option<Vec<usize>>, Box<dyn Error>> {
@@ -181,4 +217,46 @@ fn temp_path_for(path: &Path) -> Result<PathBuf, Box<dyn Error>> {
 
 fn interactive_terminal_available() -> bool {
     io::stdin().is_terminal() && io::stderr().is_terminal()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{resolve_install_target_selection, InstallTargetSelection};
+
+    #[test]
+    fn explicit_claude_flag_skips_prompt() {
+        let selection = resolve_install_target_selection(true, false, true);
+        assert_selected(selection, &[0]);
+    }
+
+    #[test]
+    fn explicit_agents_flag_skips_prompt() {
+        let selection = resolve_install_target_selection(false, true, true);
+        assert_selected(selection, &[1]);
+    }
+
+    #[test]
+    fn explicit_flags_can_select_both_targets() {
+        let selection = resolve_install_target_selection(true, true, false);
+        assert_selected(selection, &[0, 1]);
+    }
+
+    #[test]
+    fn interactive_terminal_without_flags_prompts() {
+        let selection = resolve_install_target_selection(false, false, true);
+        assert!(matches!(selection, InstallTargetSelection::Prompt));
+    }
+
+    #[test]
+    fn non_interactive_without_flags_defaults_to_both_targets() {
+        let selection = resolve_install_target_selection(false, false, false);
+        assert_selected(selection, &[0, 1]);
+    }
+
+    fn assert_selected(selection: InstallTargetSelection, expected: &[usize]) {
+        match selection {
+            InstallTargetSelection::Prompt => panic!("expected explicit selection"),
+            InstallTargetSelection::Selected(actual) => assert_eq!(actual, expected),
+        }
+    }
 }
