@@ -356,6 +356,7 @@ export class BrowserManager {
 
     const context = await this.dependencies.launchPersistentContext(profileDir, {
       headless,
+      viewport: headless ? undefined : null,
       ignoreHTTPSErrors,
       handleSIGINT: false,
       handleSIGTERM: false,
