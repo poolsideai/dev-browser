@@ -37,6 +37,25 @@ console.log(JSON.stringify(tabs, null, 2));
 EOF
 ```
 
+### PowerShell (Windows)
+
+```powershell
+@"
+const page = await browser.getPage("main");
+await page.goto("https://example.com");
+console.log(await page.title());
+"@ | dev-browser
+```
+
+With `--connect`:
+
+```powershell
+@"
+const page = await browser.getPage("main");
+console.log(await page.title());
+"@ | dev-browser --connect
+```
+
 ### Windows notes
 
 PowerShell install:

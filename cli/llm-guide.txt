@@ -4,6 +4,11 @@ LLM USAGE GUIDE:
   Use descriptive page names like "login", "checkout", or "results" instead of "page1".
   Named pages from browser.getPage("name") persist between script runs, so you usually do not need to re-navigate.
   Inside page.evaluate(...), write plain JavaScript only - no TypeScript syntax in the browser context.
+  On Windows/PowerShell, use here-strings to pipe multiline scripts:
+    @"
+    const page = await browser.getPage("main");
+    console.log(await page.title());
+    "@ | dev-browser --connect
 
   Quick inspection:
     dev-browser --connect <<'EOF'
