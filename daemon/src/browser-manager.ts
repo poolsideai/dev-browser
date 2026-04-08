@@ -12,6 +12,7 @@ export interface BrowserEntry {
   profileDir?: string;
   endpoint?: string;
   headless: boolean;
+  ignoreHTTPSErrors: boolean;
 }
 
 export interface BrowserSummary {
@@ -101,7 +102,8 @@ export class BrowserManager {
       const needsRelaunch =
         existing.type !== "launched" ||
         !existing.browser.isConnected() ||
-        (options.headless !== undefined && existing.headless !== requestedHeadless);
+        (options.headless !== undefined && existing.headless !== requestedHeadless) ||
+        (options.ignoreHTTPSErrors !== undefined && existing.ignoreHTTPSErrors !== ignoreHTTPSErrors);
 
       if (!needsRelaunch) {
         return existing;
@@ -367,6 +369,7 @@ export class BrowserManager {
       pages: new Map(),
       profileDir,
       headless,
+      ignoreHTTPSErrors,
     };
 
     this.attachBrowserLifecycle(entry);
@@ -394,6 +397,7 @@ export class BrowserManager {
       pages: new Map(),
       endpoint,
       headless: false,
+      ignoreHTTPSErrors: false,
     };
 
     this.attachBrowserLifecycle(entry);
