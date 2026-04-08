@@ -89,10 +89,12 @@ export class BrowserManager {
     name: string,
     options: {
       headless?: boolean;
+      ignoreHTTPSErrors?: boolean;
     } = {}
   ): Promise<BrowserEntry> {
     await this.ensureBaseDir();
     const requestedHeadless = options.headless ?? false;
+    const ignoreHTTPSErrors = options.ignoreHTTPSErrors ?? false;
 
     const existing = this.browsers.get(name);
     if (existing) {
@@ -108,7 +110,7 @@ export class BrowserManager {
       await this.stopBrowser(name);
     }
 
-    return this.launchBrowser(name, requestedHeadless);
+    return this.launchBrowser(name, requestedHeadless, ignoreHTTPSErrors);
   }
 
   async autoConnect(name: string): Promise<BrowserEntry> {
@@ -339,12 +341,13 @@ export class BrowserManager {
     return entry;
   }
 
-  private async launchBrowser(name: string, headless: boolean): Promise<BrowserEntry> {
+  private async launchBrowser(name: string, headless: boolean, ignoreHTTPSErrors = false): Promise<BrowserEntry> {
     const profileDir = path.join(this.baseDir, name, "chromium-profile");
     await this.dependencies.mkdir(profileDir, { recursive: true });
 
     const context = await this.dependencies.launchPersistentContext(profileDir, {
       headless,
+      ignoreHTTPSErrors,
       handleSIGINT: false,
       handleSIGTERM: false,
       handleSIGHUP: false,

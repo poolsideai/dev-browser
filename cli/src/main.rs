@@ -129,6 +129,13 @@ struct Cli {
     headless: bool,
 
     #[arg(
+        long = "ignore-https-errors",
+        help = "Accept self-signed and invalid TLS certificates",
+        long_help = "Accept self-signed and invalid TLS certificates.\n\nEnables Playwright's ignoreHTTPSErrors option on the browser context. Use this when automating sites served over HTTPS with self-signed certificates (e.g. local Vite dev servers)."
+    )]
+    ignore_https_errors: bool,
+
+    #[arg(
         long,
         default_value_t = DEFAULT_SCRIPT_TIMEOUT_SECS,
         value_name = "SECONDS",
@@ -315,6 +322,10 @@ fn run_script(cli: &Cli, script: String) -> Result<i32, Box<dyn Error>> {
 
     if cli.headless {
         request["headless"] = Value::Bool(true);
+    }
+
+    if cli.ignore_https_errors {
+        request["ignoreHTTPSErrors"] = Value::Bool(true);
     }
 
     if let Some(endpoint) = &cli.connect {
