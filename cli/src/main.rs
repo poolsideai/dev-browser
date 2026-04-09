@@ -137,6 +137,22 @@ struct Cli {
 
     #[arg(
         long,
+        value_name = "USER",
+        help = "Username for HTTP authentication (Basic/NTLM/Negotiate)",
+        long_help = "Set the username for HTTP authentication on daemon-managed Chromium.\n\nPlaywright will automatically respond to HTTP 401 challenges using these credentials. Supports Basic, Digest, NTLM, and Negotiate (Kerberos) authentication schemes.\n\nMust be used together with --http-password.\n\nThis only affects daemon-launched browsers. It has no effect when `--connect` attaches to an already-running external browser."
+    )]
+    http_user: Option<String>,
+
+    #[arg(
+        long,
+        value_name = "PASS",
+        help = "Password for HTTP authentication (Basic/NTLM/Negotiate)",
+        long_help = "Set the password for HTTP authentication on daemon-managed Chromium.\n\nMust be used together with --http-user. See --http-user for details."
+    )]
+    http_password: Option<String>,
+
+    #[arg(
+        long,
         default_value_t = DEFAULT_SCRIPT_TIMEOUT_SECS,
         value_name = "SECONDS",
         value_parser = clap::value_parser!(u32).range(1..),
@@ -323,6 +339,17 @@ fn run_script(cli: &Cli, script: String) -> Result<i32, Box<dyn Error>> {
         .checked_mul(1_000)
         .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Timeout value is too large"))?;
 
+    let http_credentials = match (&cli.http_user, &cli.http_password) {
+        (Some(user), Some(pass)) => Some(json!({"username": user, "password": pass})),
+        (None, None) => None,
+        (Some(_), None) => {
+            return Err("--http-user requires --http-password".into());
+        }
+        (None, Some(_)) => {
+            return Err("--http-password requires --http-user".into());
+        }
+    };
+
     let mut request = json!({
         "id": request_id("execute"),
         "type": "execute",
@@ -337,6 +364,10 @@ fn run_script(cli: &Cli, script: String) -> Result<i32, Box<dyn Error>> {
 
     if cli.ignore_https_errors {
         request["ignoreHTTPSErrors"] = Value::Bool(true);
+    }
+
+    if let Some(credentials) = http_credentials {
+        request["httpCredentials"] = credentials;
     }
 
     if let Some(endpoint) = &cli.connect {

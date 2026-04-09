@@ -4,12 +4,18 @@ const RequestBaseSchema = z.object({
   id: z.string().min(1),
 });
 
+const HttpCredentialsSchema = z.object({
+  username: z.string(),
+  password: z.string(),
+});
+
 const ExecuteRequestSchema = RequestBaseSchema.extend({
   type: z.literal("execute"),
   browser: z.string().min(1).default("default"),
   script: z.string(),
   headless: z.boolean().optional(),
   ignoreHTTPSErrors: z.boolean().optional(),
+  httpCredentials: HttpCredentialsSchema.optional(),
   connect: z.string().min(1).optional(),
   timeoutMs: z.number().int().positive().optional(),
 });
