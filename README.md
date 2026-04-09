@@ -4,6 +4,8 @@
 
 Brought to you by [Do Browser](https://dobrowser.io).
 
+https://github.com/user-attachments/assets/c6cf7fb9-b1dc-46ed-93b9-6e7240990c53
+
 A browser automation tool that lets AI agents and developers control browsers with sandboxed JavaScript scripts.
 
 **Key features:**
