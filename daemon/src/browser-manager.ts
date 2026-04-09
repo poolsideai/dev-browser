@@ -3,6 +3,11 @@ import os from "node:os";
 import path from "node:path";
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
 
+export interface HttpCredentials {
+  username: string;
+  password: string;
+}
+
 export interface BrowserEntry {
   name: string;
   type: "launched" | "connected";
@@ -13,6 +18,7 @@ export interface BrowserEntry {
   endpoint?: string;
   headless: boolean;
   ignoreHTTPSErrors: boolean;
+  httpCredentials?: HttpCredentials;
 }
 
 interface BrowserSummary {
@@ -92,6 +98,7 @@ export class BrowserManager {
     options: {
       headless?: boolean;
       ignoreHTTPSErrors?: boolean;
+      httpCredentials?: HttpCredentials;
     } = {}
   ): Promise<BrowserEntry> {
     await this.ensureBaseDir();
@@ -99,14 +106,22 @@ export class BrowserManager {
     const requestedHeadless = options.headless ?? existing?.headless ?? false;
     const requestedIgnoreHTTPSErrors =
       options.ignoreHTTPSErrors ?? existing?.ignoreHTTPSErrors ?? false;
+    const requestedHttpCredentials =
+      options.httpCredentials ?? existing?.httpCredentials;
 
     if (existing) {
+      const credentialsChanged =
+        options.httpCredentials !== undefined &&
+        (existing.httpCredentials?.username !== requestedHttpCredentials?.username ||
+          existing.httpCredentials?.password !== requestedHttpCredentials?.password);
+
       const needsRelaunch =
         existing.type !== "launched" ||
         !existing.browser.isConnected() ||
         (options.headless !== undefined && existing.headless !== requestedHeadless) ||
         (options.ignoreHTTPSErrors !== undefined &&
-          existing.ignoreHTTPSErrors !== requestedIgnoreHTTPSErrors);
+          existing.ignoreHTTPSErrors !== requestedIgnoreHTTPSErrors) ||
+        credentialsChanged;
 
       if (!needsRelaunch) {
         return existing;
@@ -115,7 +130,7 @@ export class BrowserManager {
       await this.stopBrowser(name);
     }
 
-    return this.launchBrowser(name, requestedHeadless, requestedIgnoreHTTPSErrors);
+    return this.launchBrowser(name, requestedHeadless, requestedIgnoreHTTPSErrors, requestedHttpCredentials);
   }
 
   async autoConnect(name: string): Promise<BrowserEntry> {
@@ -349,7 +364,8 @@ export class BrowserManager {
   private async launchBrowser(
     name: string,
     headless: boolean,
-    ignoreHTTPSErrors: boolean
+    ignoreHTTPSErrors: boolean,
+    httpCredentials?: HttpCredentials
   ): Promise<BrowserEntry> {
     const profileDir = path.join(this.baseDir, name, "chromium-profile");
     await this.dependencies.mkdir(profileDir, { recursive: true });
@@ -358,6 +374,7 @@ export class BrowserManager {
       headless,
       viewport: headless ? undefined : null,
       ignoreHTTPSErrors,
+      httpCredentials,
       handleSIGINT: false,
       handleSIGTERM: false,
       handleSIGHUP: false,
@@ -378,6 +395,7 @@ export class BrowserManager {
       profileDir,
       headless,
       ignoreHTTPSErrors,
+      httpCredentials,
     };
 
     this.attachBrowserLifecycle(entry);
